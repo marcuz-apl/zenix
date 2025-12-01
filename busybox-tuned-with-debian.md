@@ -35,7 +35,7 @@ apt update
 
 Then we need to install some packages.
 ```sh
-apt install bzip2 git vim make gcc libncurses-dev flex bison bc cpio libelf-dev libssl-dev
+apt install bzip2 unzip git vim make gcc libncurses-dev flex bison bc cpio libelf-dev libssl-dev
 ```
 
 
@@ -48,7 +48,9 @@ We'll start by cloning linux. We'll use the GitHub mirror, because why not?
 ```sh
 mkdir linux
 #git clone --depth 1 https://github.com/torvalds/linux.git ## rejected me due to I'm in North Africa?
-wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.176.tar.xz && tar -xf linux-5.15.176.tar.xz -C linux --strip-components=1
+# wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.176.tar.xz && tar -xf linux-5.15.176.tar.xz -C linux --strip-components=1
+
+wget https://github.com/torvalds/linux/archive/refs/tags/v6.8.zip && unzip v6.8.zip linux --strip-components=1
 cd linux
 ```
 `--depth 1` just means that it won't clone the entire git history. (That would be significantly longer)
