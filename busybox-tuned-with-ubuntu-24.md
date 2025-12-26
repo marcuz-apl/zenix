@@ -1,4 +1,4 @@
-# busybox - tuned with `debian:bookworm`
+# busybox - tuned with `ubuntu:latest`
 
 
 
@@ -29,41 +29,23 @@ To build a minimal Linux distro, we need three parts:
 
 When the system boots, the bootloader loads the kernel, which loads busybox.
 ```
-         Bootloader ->            Kernel                -> Userspace
+Bootloader -> Kernel -> Userspace
 (syslinux or grub2) -> (vmlinuz or linux-6.1.x-generic) -> (initrd.img or initramfs)
 ```
 
 
 
-## 1- Create a Container
+## 1- Install a Ubuntu 24.04 or grab a WSL distro of Such
 
-It's bad to install locallly, so we'll do everything in an Ubuntu container.
+It's bad to install locally, so I'll try everything in a WSL distro of Ubuntu 24.04.
 ```sh
 ## Install the packages as needed
-sudo apt install qemu-system-x86 docker.io
-
-## Grab the docker image and power up
-docker run --privileged --name tinyvbox -it debian:bookworm
-```
-You'll notice that `--privileged` flag. It is required for mounting some stuff later on.
-
-
-
-## 2- Setup inside the Container
-
-Start by updating the system:
-```sh
-apt update
-```
-
-Then we need to install some packages.
-```sh
-apt install bzip2 curl xz-utils unzip wget git nano make gcc flex bison bc cpio libncurses-dev libelf-dev libssl-dev dosfstools -y
+sudo apt update
+sudo apt install qemu-system-x86 dosfstools bzip2 curl xz-utils unzip wget git nano make gcc flex bison bc cpio libncurses-dev libelf-dev libssl-dev dosfstools -y
 ```
 
 
-
-## 3- Build Linux Kernel from Source
+## 2- Build Linux Kernel from Source
 
 First, we need to get a kernel.
 
@@ -72,14 +54,6 @@ We'll start by cloning Linux. We'll use the GitHub mirror, because why not?
 mkdir linux
 
 git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git --depth 1 --branch v6.1.158
-
-du -sh linux
-## 1.7G - that's big-sized
- 
-#### Lets try other older LTS kerbel
-# wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.196.tar.xz && tar -xf linux-5.15.196.tar.xz -C linux --strip-components=1    ## 1.2G
-# wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.1.158.tar.xz && tar -xf linux-6.1.158.tar.xz -C linux --strip-components=1   ## 1.5G
-# wget https://github.com/torvalds/linux/archive/refs/tags/v6.8.zip && unzip v6.8.zip -d linux    ## 1.6G
 
 cd linux
 ```
@@ -90,13 +64,22 @@ Next, we need to make the kernel config. There's a lot of options, and I'm sure 
 # make tinyconfig
 make menuconfig
 ```
-Then arrow over to `< Exit >`, and `< Yes >` to save the configuration.
+Then arrow over to `< Exit >`, and save the configuration.
+
+Important: Don’t forget to enable `CONFIG_PVH=y` in `.config` if you want to run in QEMU.
+
+```shell
+nano .config
+
+```
+
+then search "PVH" to update that line to be `CONFIG_PVH=y`.
 
 So, without further ado, let's build the kernel.
 ```sh
 make -j$(nproc)
 ```
-This will take a LONG time... 9 minutes on a M1 iMac.
+This will take a LONG time...
 
 At the end, you should see a line that says:
 ```txt
@@ -104,10 +87,74 @@ Kernel at arch/x86/boot/bzImage is ready
 ```
 
 This is our kernel binary. Since we'll need it later, let's copy it to another place.
+
 ```sh
 mkdir /boot-files
 cp arch/x86/boot/bzImage /boot-files/
 ```
+
+We can give a try:
+
+```shell
+ls -lh vmlinux
+qemu-system-x86_64 -kernel ./vmlinux -nographic --append "console=tty0 console=ttyS0 panic=1 root=/dev/sda rootfstype=ext2" -m 1024 -vga none -display none -serial mon:stdio -no-reboot
+```
+
+It will panic eventually, due to unable to find an `init`.
+
+Basically the kernel was frantically looking for an `init` executable in `/sbin`,`/etc`,`/bin`. Really just any executable (can be a shell script, or a binary executable).
+
+
+
+## 3- Our own init
+
+Let’s write our own init for now. The `sleep` is to prevent the kernel from panicing (it will panic if `init` exits).
+
+```shell
+## Still in `linux` folder
+mkdir vfs && cd vfs
+nano hello-kernel.c
+```
+
+The Content of the `hello-kernel.c` belike:
+
+```txt
+#include <stdio.h>
+#include <unistd.h>
+
+int main(){
+    printf("Hello, Kernel!\n");
+    sleep(1200);
+    return 0;
+}
+```
+
+Then compile this .c file:
+
+```shell
+gcc --static hello-kernel.c -o init
+chmod +x ./init
+```
+
+Now we just need to package it up into a `cpio` format.
+
+```shell
+find .
+find . | cpio -o -H newc > ../initrd.img
+```
+
+Then we try QEMU successfully:
+
+```shell
+## back to `linux folder
+cd ..
+## give a try
+qemu-system-x86_64 -kernel ./vmlinux -nographic --append "console=tty0 console=ttyS0 panic=1 root=/dev/sda rootfstype=ext2" -hda rootfs.ext2 -m 1024 -vga none -display none -serial mon:stdio -no-reboot -initrd initrd
+```
+
+Press `Ctrl+a`, then `c` returning to `(qemu)` status, then `q <enter>` to back to the Ubuntu.
+
+Great! But now we don’t just want our `init` to say hello, we want our `init` to be able to put us into a shell and let us navigate and do productive work! That is where [busybox](https://busybox.net/) comes in!
 
 
 
@@ -119,17 +166,20 @@ Busybox is a bundle of many basic Linux utilities, for example `ls`, `grep`, and
 
 First, let's clone the sources (this process is very similar to the Kernel)
 ```sh
+## don't do stuff in the linux directory, git will be confused
 cd ../
 mkdir busybox
 
-### the busybox.net is not accessible, or extremely slow these days, Ok in Canada though
+### the busybox.net is not accessible, or extremely slow these days
 # git clone --depth 1 https://git.busybox.net/busybox
+git clone --depth=1 https://github.com/mirror/busybox.git
 
-### Then use a mirror which dones't bear the latest busybox 1.37.0 though
-wget https://github.com/mirror/busybox/archive/refs/tags/1_36_1.tar.gz && tar -xf 1_36_1.tar.gz -C busybox --strip-components=1
+# wget https://github.com/mirror/busybox/archive/refs/tags/1_36_1.tar.gz && tar -xf 1_36_1.tar.gz -C busybox --strip-components=1
 # wget https://github.com/mirror/busybox/archive/refs/tags/1_36_1.zip && unzip 1_36-1.zip -d busybox
 
 cd busybox
+## Check info
+git log
 ```
 
 Now, we can edit the busybox config. 
@@ -144,31 +194,11 @@ Then `exit` twice, and save changes, just like in the kernel.
 
 Now we'll build it, just like the kernel:
 ```sh
-make -j$(nproc)
+sudo make -j$(nproc)
 ```
 It shouldn't take nearly as long, but you never know...
 
-If you encounter errors or warnings like:
 
-```txt
-Static linking against glibc, can't use --gc-sections
-Trying libraries: crypt m resolv rt
- Library crypt is not needed, excluding it
- Library m is needed, can't exclude it (yet)
- Library resolv is needed, can't exclude it (yet)
- Library rt is not needed, excluding it
- Library m is needed, can't exclude it (yet)
- Library resolv is needed, can't exclude it (yet)
-Final link with: m resolv
-```
-
-Please install `cmake` package and compile again:
-
-```shell
-apt install cmake
-# re-run the make command
-make -j$(nproc)
-```
 
 ### 4.2 Install compiled busybox utilities into `initramfs` folder
 
@@ -199,12 +229,21 @@ ls -la /boot-files/initramfs
 
 The kernel needs something to execute. It looks in `/init` for this file. On a normal linux system, this is a systemd binary, but here, it's just a shell script.
 ```sh
-cd /boot-files/initramfs
+cd ../linux
+mkdir initrd && cd initrd
+mkdir etc proc sys
 
-echo << EOF > ./init
+cat << EOF > init
 #!/bin/sh
 
-/bin/sh
+mount -t proc proc /proc
+mount -t sysfs none /sys
+
+# https://busybox.net/FAQ.html#job_control
+
+mknod /dev/ttyS0 c 4 64
+setsid sh -c 'exec sh <dev/ttyS0 > /dev/ttyS0 2>&1'
+
 EOF
 
 chmod +x ./init
@@ -270,7 +309,7 @@ mkfs -t fat ./boot
 
 We'll need the `syslinux` package:
 ```sh
-# apt install -y syslinux-common mtools dosfstools
+# apt install -y syslinux
 ```
 
 Then we can install `syslinux` onto this `boot` file with command below:
@@ -292,7 +331,7 @@ cp {bzImage,initrd.img} m/
 
 ## Optionally check the size of the m folder
 du -sh m
-## It's around 3.2MB
+## It's around 14MB
 ```
 
 Now we can umount the filesystem:
