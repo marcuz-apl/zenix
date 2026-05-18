@@ -5,7 +5,7 @@ by Marcus Zou | initiated on 17 September 2024
 
 ## Intro
 
-Using Ubuntu 24.04 quite a wile now till caming across an issue when trying to run AnythingLLM for an Ollama localization project. The root cause is I could not run AnythingLLM whith Python 3.12.x since that app requires Python 3.11.x, seriously?
+Using Ubuntu 24.04 quite a wile now till coming across an issue when trying to run AnythingLLM for an Ollama localization project. The root cause is I could not run AnythingLLM whith Python 3.12.x since that app requires Python 3.11.x, seriously?
 
 As far as I know Ubuntu 23.04 has Python 3.11 but it's not a LTS edition. Plus the Ubuntu 24.04 + Gnome Desktop UI (heavy-duty) giving me this headache, I am gonna try to figure out a fully-custom Linux Distro with a selected Kernel + basic LFS + Desktop UI for my own use only.
 
