@@ -1,26 +1,8 @@
 # busybox - tuned with `ubuntu:latest`
 
 
-
-## The Ultimate Resources
-
-- The Official website of Kernel Archives: www.kernel.org
-- Nir Lichtman's YouTube channel:
-  - `Dive into Linux kernel` - https://www.youtube.com/watch?v=D4k1Q3aHpT8&list=PL0tgH22U2S3GiMeldUs9osJCFDuqjKq_V
-- Chris Titus Tech YouTube Channel:
-  - Build Your Own Operating System: https://www.youtube.com/watch?v=YbXHU7W7Its
-  - Creating Your Own Linux Distribution: https://www.youtube.com/watch?v=pZcbHdBs_TE
-- YouTube Channel by DenshiVideo: https://www.youtube.com/watch?v=APQY0wUbBow
-
-
-
-### The referred video
-
-Specially for this experiment, please move to: https://www.youtube.com/watch?v=QlzoegSuIzg
-
-
-
 ## The Three Parts
+
 
 To build a minimal Linux distro, we need three parts:
 1. The Kernel ("bzImage")
@@ -32,7 +14,6 @@ When the system boots, the bootloader loads the kernel, which loads busybox.
 Bootloader -> Kernel -> Userspace
 (syslinux or grub2) -> (vmlinuz or linux-6.1.x-generic) -> (initrd.img or initramfs)
 ```
-
 
 
 ## 1- Install a Ubuntu 24.04 or grab a WSL distro of Such
@@ -105,7 +86,6 @@ It will panic eventually, due to unable to find an `init`.
 Basically the kernel was frantically looking for an `init` executable in `/sbin`,`/etc`,`/bin`. Really just any executable (can be a shell script, or a binary executable).
 
 
-
 ## 3- Our own init
 
 Let’s write our own init for now. The `sleep` is to prevent the kernel from panicing (it will panic if `init` exits).
@@ -157,7 +137,6 @@ Press `Ctrl+a`, then `c` returning to `(qemu)` status, then `q <enter>` to back 
 Great! But now we don’t just want our `init` to say hello, we want our `init` to be able to put us into a shell and let us navigate and do productive work! That is where [busybox](https://busybox.net/) comes in!
 
 
-
 ## 4- Build the Userspace (initramfs) using Busybox
 
 ### 4.1 Download and Compile the BusyBox 
@@ -197,7 +176,6 @@ Now we'll build it, just like the kernel:
 sudo make -j$(nproc)
 ```
 It shouldn't take nearly as long, but you never know...
-
 
 
 ### 4.2 Install compiled busybox utilities into `initramfs` folder
@@ -282,7 +260,6 @@ drwxr-xr-x 5 root root     4096 Dec  2 09:16 initramfs
 ```
 
 
-
 ## 5- Create the "filesystem"
 
 ### 5.1 Generate an empty filesystem
@@ -360,7 +337,6 @@ exit
 ```
 
 
-
 ## 6. Test it
 
 We can test the image using `qemu`. Assuming you don't want to install qemu on your container, we'll copy the files to the host system.
@@ -391,7 +367,6 @@ Just wait for it to boot up, then you'll be greeted with a shell prompt!
 ```
 
 
-
 ## Bonus: Tune the kernel or install more binaries
 
 You can install any software that you want to the system using the following procedure:
@@ -410,3 +385,16 @@ You can install any software that you want to the system using the following pro
 4. ...
 
 5. Re-run the `qemu` session.
+
+
+## The Resources
+
+- The Official website of Kernel Archives: www.kernel.org
+- Nir Lichtman's YouTube channel:
+  - `Dive into Linux kernel` - https://www.youtube.com/watch?v=D4k1Q3aHpT8&list=PL0tgH22U2S3GiMeldUs9osJCFDuqjKq_V
+- Chris Titus Tech YouTube Channel:
+  - Build Your Own Operating System: https://www.youtube.com/watch?v=YbXHU7W7Its
+  - Creating Your Own Linux Distribution: https://www.youtube.com/watch?v=pZcbHdBs_TE
+- YouTube Channel by DenshiVideo: https://www.youtube.com/watch?v=APQY0wUbBow
+
+- **Specially for this experiment**, please move to: https://www.youtube.com/watch?v=QlzoegSuIzg
