@@ -1,25 +1,6 @@
 # busybox - tuned with `debian:bookworm`
 
 
-
-## The Ultimate Resources
-
-- The Official website of Kernel Archives: www.kernel.org
-- Nir Lichtman's YouTube channel:
-  - `Dive into Linux kernel` - https://www.youtube.com/watch?v=D4k1Q3aHpT8&list=PL0tgH22U2S3GiMeldUs9osJCFDuqjKq_V
-- Chris Titus Tech YouTube Channel:
-  - Build Your Own Operating System: https://www.youtube.com/watch?v=YbXHU7W7Its
-  - Creating Your Own Linux Distribution: https://www.youtube.com/watch?v=pZcbHdBs_TE
-- YouTube Channel by DenshiVideo: https://www.youtube.com/watch?v=APQY0wUbBow
-
-
-
-### The referred video
-
-Specially for this experiment, please move to: https://www.youtube.com/watch?v=QlzoegSuIzg
-
-
-
 ## The Three Parts
 
 To build a minimal Linux distro, we need three parts:
@@ -32,7 +13,6 @@ When the system boots, the bootloader loads the kernel, which loads busybox.
          Bootloader ->            Kernel                -> Userspace
 (syslinux or grub2) -> (vmlinuz or linux-6.1.x-generic) -> (initrd.img or initramfs)
 ```
-
 
 
 ## 1- Create a Container
@@ -108,7 +88,6 @@ This is our kernel binary. Since we'll need it later, let's copy it to another p
 mkdir /boot-files
 cp arch/x86/boot/bzImage /boot-files/
 ```
-
 
 
 ## 4- Build the Userspace (initramfs) using Busybox
@@ -243,7 +222,6 @@ drwxr-xr-x 5 root root     4096 Dec  2 09:16 initramfs
 ```
 
 
-
 ## 5- Create the "filesystem"
 
 ### 5.1 Generate an empty filesystem
@@ -321,7 +299,6 @@ exit
 ```
 
 
-
 ## 6. Test it
 
 We can test the image using `qemu`. Assuming you don't want to install qemu on your container, we'll copy the files to the host system.
@@ -352,7 +329,6 @@ Just wait for it to boot up, then you'll be greeted with a shell prompt!
 ```
 
 
-
 ## Bonus: Tune the kernel or install more binaries
 
 You can install any software that you want to the system using the following procedure:
@@ -371,3 +347,16 @@ You can install any software that you want to the system using the following pro
 4. ...
 
 5. Re-run the `qemu` session.
+
+
+## The Resources
+
+- The Official website of Kernel Archives: www.kernel.org
+- Nir Lichtman's YouTube channel:
+  - `Dive into Linux kernel` - https://www.youtube.com/watch?v=D4k1Q3aHpT8&list=PL0tgH22U2S3GiMeldUs9osJCFDuqjKq_V
+- Chris Titus Tech YouTube Channel:
+  - Build Your Own Operating System: https://www.youtube.com/watch?v=YbXHU7W7Its
+  - Creating Your Own Linux Distribution: https://www.youtube.com/watch?v=pZcbHdBs_TE
+- YouTube Channel by DenshiVideo: https://www.youtube.com/watch?v=APQY0wUbBow
+
+- **Specially for this experiment**, please move to: https://www.youtube.com/watch?v=QlzoegSuIzg
