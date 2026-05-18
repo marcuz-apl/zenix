@@ -1,4 +1,4 @@
-# busybox - tuned with `ubuntu:latest`
+# busybox - tuned with `ubuntu:24`
 
 
 ## The Three Parts
